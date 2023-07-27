@@ -1,0 +1,552 @@
+type Compiler ¶
+type Compiler struct {
+	Errors   []CompilerMessage
+	Warnings []CompilerMessage
+	// contains filtered or unexported fields
+}
+A Compiler encapsulates the YARA compiler that transforms rules into YARA's internal, binary form which in turn is used for scanning files or memory blocks.
+
+func NewCompiler ¶
+func NewCompiler() (*Compiler, error)
+NewCompiler creates a YARA compiler.
+
+func (*Compiler) AddFile ¶
+func (c *Compiler) AddFile(file *os.File, namespace string) (err error)
+AddFile compiles rules from a file. Rules are added to the specified namespace.
+
+If this function returns an error, the Compiler object will become unusable.
+
+func (*Compiler) AddString ¶
+func (c *Compiler) AddString(rules string, namespace string) (err error)
+AddString compiles rules from a string. Rules are added to the specified namespace.
+
+If this function returns an error, the Compiler object will become unusable.
+
+func (*Compiler) DefineVariable ¶
+func (c *Compiler) DefineVariable(identifier string, value interface{}) (err error)
+DefineVariable defines a named variable for use malwafere 
+type Compiler ¶
+type Compiler struct {
+	Errors   []CompilerMessage
+	Warnings []CompilerMessage
+	// contains filtered or unexported fields
+}
+A Compiler encapsulates the YARA compiler that transforms rules into YARA's internal, binary form which in turn is used for scanning files or memory blocks.
+
+func NewCompiler ¶
+func NewCompiler() (*Compiler, error)
+NewCompiler creates a YARA compiler.
+
+func (*Compiler) AddFile ¶
+func (c *Compiler) AddFile(file *os.File, namespace string) (err error)
+AddFile compiles rules from a file. Rules are added to the specified namespace.
+
+If this function returns an error, the Compiler object will become unusable.
+
+func (*Compiler) AddString ¶
+func (c *Compiler) AddString(rules string, namespace string) (err error)
+AddString compiles rules from a string. Rules are added to the specified namespace.
+
+If this function returns an error, the Compiler object will become unusable.
+
+func (*Compiler) DefineVariable ¶
+func (c *Compiler) DefineVariable(identifier string, value interface{}) (err error)
+DefineVariable defines a named variable for use by the compiler. Boolean, int64, float64, and string types are supported.
+
+func (*Compiler) Destroy ¶
+func (c *Compiler) Destroy()
+Destroy destroys the YARA data structure representing a compiler. Since a Finalizer for the underlying YR_COMPILER structure is automatically set up on creation, it should not be necessary to explicitly call this method.
+
+func (*Compiler) DisableIncludes ¶
+added in v1.0.5
+func (c *Compiler) DisableIncludes()
+DisableIncludes disables all include statements in the compiler. See yr_compiler_set_include_callbacks.
+
+func (*Compiler) GetRules ¶
+func (c *Compiler) GetRules() (*Rules, error)
+GetRules returns the compiled ruleset.
+
+func (*Compiler) SetIncludeCallback ¶
+added in v1.0.5
+func (c *Compiler) SetIncludeCallback(cb CompilerIncludeFunc)
+SetIncludeCallback sets up cb as an include callback that is called (through Go glue code) by the YARA compiler for every include statement.
+
+type CompilerIncludeFunc ¶
+added in v1.0.5
+type CompilerIncludeFunc func(name, filename, namespace string) []byte
+CompilerIncludeFunc is the type of the function that can be registered through SetIncludeCallback. It is called for every include statement encountered by the compiler. The argument "name" specifies the rule file to be included, "filename" specifies the name of the rule file where the include statement has been encountered, and "namespace" specifies the rule namespace. The sole return value is a byte slice containing the contents of the included file. A return value of nil signals an error to the YARA compiler.
+
+See also: yr_compiler_set_include_callback in the YARA C API documentation.
+
+type CompilerMessage ¶
+type CompilerMessage struct {
+	Filename string
+	Line     int
+	Text     string
+}
+A CompilerMessage contains an error or warning message produced while compiling sets of rules using AddString or AddFile.
+
+type ConfigName ¶
+added in v1.1.0
+type ConfigName uint32
+const ConfigMaxMatchData ConfigName = C.YR_CONFIG_MAX_MATCH_DATA
+const ConfigMaxStringsPerRule ConfigName = C.YR_CONFIG_MAX_STRINGS_PER_RULE
+const ConfigStackSize ConfigName = C.YR_CONFIG_STACK_SIZE
+type Error ¶
+added in v1.3.0
+type Error int
+Error encapsulates the C API error codes.
+
+func (Error) Error ¶
+added in v1.3.0
+func (e Error) Error() string
+type Match ¶
+added in v1.0.6
+type Match struct {
+	// contains filtered or unexported fields
+}
+Match represents a string match.
+
+func (*Match) Base ¶
+added in v1.3.0
+func (m *Match) Base() int64
+Base returns the base offset of the memory block in which the string match occurred.
+
+func (*Match) Data ¶
+added in v1.0.6
+func (m *Match) Data() []byte
+Data returns the blob of data associated with the string match.
+
+func (*Match) Offset ¶
+added in v1.0.6
+func (m *Match) Offset() int64
+Offset returns the offset at which the string match occurred.
+
+type MatchRule ¶
+type MatchRule struct {
+	Rule      string
+	Namespace string
+	Tags      []string
+	Meta      map[string]interface{}
+	Strings   []MatchString
+}
+A MatchRule represents a rule successfully matched against a block of data.
+
+type MatchRules ¶
+added in v1.0.7
+type MatchRules []MatchRule
+MatchRules is used to collect matches that are returned by the simple (*Rules).Scan* methods.
+
+func (*MatchRules) RuleMatching ¶
+added in v1.0.7
+func (mr *MatchRules) RuleMatching(r *Rule) (abort bool, err error)
+RuleMatching implements the ScanCallbackMatch interface for MatchRules.
+
+type MatchString ¶
+type MatchString struct {
+	Name   string
+	Base   uint64
+	Offset uint64
+	Data   []byte
+}
+A MatchString represents a string declared and matched in a rule.
+
+type MemoryBlock ¶
+added in v1.3.0
+type MemoryBlock struct {
+	// Base contains the base address of the current block
+	Base uint64
+	// Size contains the size of the current block
+	Size uint64
+	// FetchData is used to read size bytes into a byte slice
+	FetchData func([]byte)
+}
+MemoryBlock is returned by the MemoryBlockIterator's First and Next methods
+
+type MemoryBlockIterator ¶
+added in v1.3.0
+type MemoryBlockIterator interface {
+	First() *MemoryBlock
+	Next() *MemoryBlock
+}
+MemoryBlockIterator is a Go representation of YARA's YR_MEMORY_BLOCK_ITERATOR mechanism that is used within yr_rules_mem_scan_blobs.
+
+type Meta ¶
+added in v1.2.0
+type Meta struct {
+	Identifier string
+	Value      interface{}
+}
+Meta represents a rule meta variable. Value can be of type string, int, boolean, or nil.
+
+type Object ¶
+added in v1.0.7
+type Object struct {
+	// contains filtered or unexported fields
+}
+type Rule ¶
+added in v1.0.5
+type Rule struct {
+	// contains filtered or unexported fields
+}
+Rule represents a single rule as part of a ruleset.
+
+func (*Rule) Disable ¶
+added in v1.0.5
+func (r *Rule) Disable()
+Disable disables a single rule.
+
+func (*Rule) Enable ¶
+added in v1.0.5
+func (r *Rule) Enable()
+Enable enables a single rule.
+
+func (*Rule) Identifier ¶
+added in v1.0.5
+func (r *Rule) Identifier() string
+Identifier returns the rule's name.
+
+func (*Rule) IsGlobal ¶
+added in v1.2.0
+func (r *Rule) IsGlobal() bool
+IsGlobal returns true if the rule is marked as global.
+
+func (*Rule) IsPrivate ¶
+added in v1.2.0
+func (r *Rule) IsPrivate() bool
+IsPrivate returns true if the rule is marked as private.
+
+func (*Rule) MetaList ¶
+added in v1.2.0
+func (r *Rule) MetaList() (metas []Meta)
+MetaList returns the rule's meta variables as a list of Meta objects. It does not share the limitation of Metas().
+
+func (*Rule) MetaMap ¶
+added in v1.2.0
+func (r *Rule) MetaMap() (metas map[string][]interface{})
+MetaMap returns a map containing the rule's meta variables, with the variable names as keys. Values are collected into lists, this allows for multiple variables with the same; individual values can be of type string, int, bool, or nil.
+
+func (*Rule)
+Metas
+DEPRECATED
+added in v1.0.5
+func (*Rule) Namespace ¶
+added in v1.0.5
+func (r *Rule) Namespace() string
+Namespace returns the rule's namespace.
+
+func (*Rule) Strings ¶
+added in v1.0.6
+func (r *Rule) Strings() (strs []String)
+Strings returns the rule's strings.
+
+func (*Rule) Tags ¶
+added in v1.0.5
+func (r *Rule) Tags() (tags []string)
+Tags returns the rule's tags.
+
+type Rules ¶
+type Rules struct {
+	// contains filtered or unexported fields
+}
+Rules contains a compiled YARA ruleset.
+
+func Compile ¶
+func Compile(rules string, variables map[string]interface{}) (r *Rules, err error)
+Compile compiles rules and an (optional) set of variables into a Rules object in a single step.
+
+func LoadRules ¶
+func LoadRules(filename string) (*Rules, error)
+LoadRules retrieves a compiled ruleset from filename.
+
+func MustCompile ¶
+func MustCompile(rules string, variables map[string]interface{}) (r *Rules)
+MustCompile is like Compile but panics if the rules and optional variables can't be compiled. Like regexp.MustCompile, it allows for simple, safe initialization of global or test data.
+
+func ReadRules ¶
+func ReadRules(rd io.Reader) (*Rules, error)
+ReadRules retrieves a compiled ruleset from an io.Reader.
+
+func (*Rules) DefineVariable ¶
+func (r *Rules) DefineVariable(identifier string, value interface{}) (err error)
+DefineVariable defines a named variable for use by the compiler. Boolean, int64, float64, and string types are supported.
+
+func (*Rules) Destroy ¶
+func (r *Rules) Destroy()
+Destroy destroys the YARA data structure representing a ruleset. Since a Finalizer for the underlying YR_RULES structure is automatically set up on creation, it should not be necessary to explicitly call this method.
+
+func (*Rules) GetRules ¶
+added in v1.0.5
+func (r *Rules) GetRules() (rv []Rule)
+GetRules returns a slice of rule objects that are part of the ruleset.
+
+func (*Rules) Save ¶
+func (r *Rules) Save(filename string) (err error)
+Save writes a compiled ruleset to filename.
+
+func (*Rules) ScanFile ¶
+func (r *Rules) ScanFile(filename string, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error)
+ScanFile scans a file using the ruleset, returning matches via a list of MatchRule objects.
+
+func (*Rules) ScanFileDescriptor ¶
+func (r *Rules) ScanFileDescriptor(fd uintptr, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error)
+ScanFileDescriptor scans a file using the ruleset, returning matches via a list of MatchRule objects.
+
+func (*Rules) ScanFileDescriptorWithCallback ¶
+added in v1.0.7
+func (r *Rules) ScanFileDescriptorWithCallback(fd uintptr, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error)
+ScanFileDescriptorWithCallback scans a file using the ruleset. For every event emitted by libyara, the appropriate method on the ScanCallback object is called.
+
+func (*Rules) ScanFileWithCallback ¶
+added in v1.0.7
+func (r *Rules) ScanFileWithCallback(filename string, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error)
+ScanFileWithCallback scans a file using the ruleset. For every event emitted by libyara, the appropriate method on the ScanCallback object is called.
+
+func (*Rules) ScanMem ¶
+func (r *Rules) ScanMem(buf []byte, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error)
+ScanMem scans an in-memory buffer using the ruleset, returning matches via a list of MatchRule objects.
+
+func (*Rules) ScanMemBlocks ¶
+added in v1.3.0
+func (r *Rules) ScanMemBlocks(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error)
+ScahMemBlocks scans over a MemoryBlockIterator using the ruleset, returning matches via a list of MatchRule objects..
+
+func (*Rules) ScanMemBlocksWithCallback ¶
+added in v1.3.0
+func (r *Rules) ScanMemBlocksWithCallback(mbi MemoryBlockIterator, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error)
+ScanMemBlocksWithCallback scans over a MemoryBlockIterator using the ruleset. For every event emitted by libyara, the appropriate method on the ScanCallback object is called.
+
+func (*Rules) ScanMemWithCallback ¶
+added in v1.0.7
+func (r *Rules) ScanMemWithCallback(buf []byte, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error)
+ScanMemWithCallback scans an in-memory buffer using the ruleset. For every event emitted by libyara, the appropriate method on the ScanCallback object is called.
+
+func (*Rules) ScanProc ¶
+func (r *Rules) ScanProc(pid int, flags ScanFlags, timeout time.Duration) (matches []MatchRule, err error)
+ScanProc scans a live process using the ruleset, returning matches via a list of MatchRule objects.
+
+func (*Rules) ScanProcWithCallback ¶
+added in v1.0.7
+func (r *Rules) ScanProcWithCallback(pid int, flags ScanFlags, timeout time.Duration, cb ScanCallback) (err error)
+ScanProcWithCallback scans a live process using the ruleset. For every event emitted by libyara, the appropriate method on the ScanCallback object is called.
+
+func (*Rules) Write ¶
+func (r *Rules) Write(wr io.Writer) (err error)
+Write writes a compiled ruleset to an io.Writer.
+
+type ScanCallback ¶
+added in v1.0.7
+type ScanCallback interface{}
+ScanCallback is a placeholder for different interfaces that may be implemented by the callback object that is passed to the (*Rules).Scan*WithCallback methods.
+
+type ScanCallbackFinished ¶
+added in v1.0.7
+type ScanCallbackFinished interface {
+	ScanFinished() (bool, error)
+}
+ScanCallbackFinished is used to signal that a scan has finished. The ScanFinished method corresponds to YARA's CALLBACK_MSG_SCAN_FINISHED message.
+
+type ScanCallbackMatch ¶
+added in v1.0.7
+type ScanCallbackMatch interface {
+	RuleMatching(*Rule) (bool, error)
+}
+ScanCallbackMatch is used to record rules that matched during a scan. The RuleMatching method corresponds to YARA's CALLBACK_MSG_RULE_MATCHING message.
+
+type ScanCallbackModuleImport ¶
+added in v1.0.7
+type ScanCallbackModuleImport interface {
+	ImportModule(string) ([]byte, bool, error)
+}
+ScanCallbackModuleImport is used to provide data to a YARA module. The ImportModule method corresponds to YARA's CALLBACK_MSG_IMPORT_MODULE message.
+
+type ScanCallbackModuleImportFinished ¶
+added in v1.0.7
+type ScanCallbackModuleImportFinished interface {
+	ModuleImported(*Object) (bool, error)
+}
+ScanCallbackModuleImportFinished can be used to free resources that have been used in the ScanCallbackModuleImport implementation. The ModuleImported method corresponds to YARA's CALLBACK_MSG_MODULE_IMPORTED message.
+
+type ScanCallbackNoMatch ¶
+added in v1.0.7
+type ScanCallbackNoMatch interface {
+	RuleNotMatching(*Rule) (bool, error)
+}
+ScanCallbackNoMatch is used to record rules that did not match during a scan. The RuleNotMatching method corresponds to YARA's CALLBACK_MSG_RULE_NOT_MATCHING mssage.
+
+type ScanFlags ¶
+type ScanFlags int
+ScanFlags are used to tweak the behavior of Scan* functions.
+
+type Scanner ¶
+added in v1.2.0
+type Scanner struct {
+	// contains filtered or unexported fields
+}
+Scanner contains a YARA scanner (YR_SCANNER). The main difference to Rules (YR_RULES) is that it is possible to set variables in a thread-safe manner (cf. https://github.com/VirusTotal/yara/issues/350).
+
+func NewScanner ¶
+added in v1.2.0
+func NewScanner(r *Rules) (*Scanner, error)
+NewScanner creates a YARA scanner.
+
+func (*Scanner) DefineVariable ¶
+added in v1.2.0
+func (s *Scanner) DefineVariable(identifier string, value interface{}) (err error)
+DefineVariable defines a named variable for use by the scanner. Boolean, int64, float64, and string types are supported.
+
+func (*Scanner) Destroy ¶
+added in v1.2.0
+func (s *Scanner) Destroy()
+Destroy destroys the YARA data structure representing a scanner. Since a Finalizer for the underlying YR_SCANNER structure is automatically set up on creation, it should not be necessary to explicitly all this method.
+
+func (*Scanner) GetLastErrorRule ¶
+added in v1.3.0
+func (s *Scanner) GetLastErrorRule() (r *Rule)
+GetLastErrorRule returns the Rule which caused the last error
+
+The result is nil, if scanner returned no rule
+
+func (*Scanner) GetLastErrorString ¶
+added in v1.3.0
+func (s *Scanner) GetLastErrorString() (r *String)
+GetLastErrorString returns the String which caused the last error
+
+The result is nil, if scanner returned no string
+
+func (*Scanner) ScanFile ¶
+added in v1.2.0
+func (s *Scanner) ScanFile(filename string) (matches []MatchRule, err error)
+ScanFile scans a file using the scanner.
+
+If a callback object has been set for the scanner using SetCAllback, matches is nil and the callback object is used instead to collect scan events.
+
+func (*Scanner) ScanFileDescriptor ¶
+added in v1.2.0
+func (s *Scanner) ScanFileDescriptor(fd uintptr) (matches []MatchRule, err error)
+ScanFileDescriptor scans a file using the scanner.
+
+If a callback object has been set for the scanner using SetCAllback, matches is nil and the callback object is used instead to collect scan events.
+
+func (*Scanner) ScanMem ¶
+added in v1.2.0
+func (s *Scanner) ScanMem(buf []byte) (matches []MatchRule, err error)
+ScanMem scans an in-memory buffer using the scanner.
+
+If a callback object has been set for the scanner using SetCAllback, matches is nil and the callback object is used instead to collect scan events.
+
+func (*Scanner) ScanMemBlocks ¶
+added in v1.3.0
+func (s *Scanner) ScanMemBlocks(mbi MemoryBlockIterator, cb ScanCallback) (matches []MatchRule, err error)
+ScahMemBlocks scans over a MemoryBlockIterator using the scanner.
+
+If a callback object has been set for the scanner using SetCAllback, matches is nil and the callback object is used instead to collect scan events.
+
+func (*Scanner) ScanProc ¶
+added in v1.2.0
+func (s *Scanner) ScanProc(pid int) (matches []MatchRule, err error)
+ScanProc scans a live process using the scanner.
+
+If a callback object has been set for the scanner using SetCAllback, matches is nil and the callback object is used instead to collect scan events.
+
+func (*Scanner) SetCallback ¶
+added in v1.2.0
+func (s *Scanner) SetCallback(cb ScanCallback) *Scanner
+SetCallback sets a callback object for the scanner. For every event emitted by libyara during subsequent scan, the appropriate method on the ScanCallback object is called.
+
+For the common case where only a list of matched rules is relevant, setting a callback object is not necessary.
+
+func (*Scanner) SetFlags ¶
+added in v1.2.0
+func (s *Scanner) SetFlags(flags ScanFlags) *Scanner
+SetFlags sets flags for the scanner.
+
+func (*Scanner) SetTimeout ¶
+added in v1.2.0
+func (s *Scanner) SetTimeout(timeout time.Duration) *Scanner
+SetTimeout sets a timeout for the scanner.
+
+type String ¶
+added in v1.0.6
+type String struct {
+	// contains filtered or unexported fields
+}
+String represents a string as part of a rule.
+
+func (*String) Identifier ¶
+added in v1.0.6
+func (s *String) Identifier() string
+Identifier returns the string's name.
+
+func (*String) Matches ¶
+added in v1.0.6
+func (s *String) Matches() (matches []Match)
+Matches returns all matches that have been recorded for the string.
+
+ Source Files ¶
+View all
+cbpool.go
+cgo.go
+compiler.go
+compiler_addfile_yara36.go
+compiler_yara37.go
+config.go
+config_yara37.go
+config_yara38.go
+error.go
+error_yara311.go
+error_yara34.go
+error_yara35.go
+error_yara36.go
+error_yara37.go
+error_yara38.go
+main.go
+mem_blocks.go
+object.go
+rule.go
+rule_yara35.go
+rule_yara37.go
+rules.go
+rules_callback.go
+rules_yara34.go
+scanner.go
+stream.go
+util.go
+ Directories ¶
+Collapse all
+_examples
+simple-yara
+Why Go
+Use Cases
+Case Studies
+Get Started
+Playground
+Tour
+Stack Overflow
+Help
+Packages
+Standard Library
+Sub-repositories
+About Go Packages
+About
+Download
+Blog
+Issue Tracker
+Release Notes
+Brand Guidelines
+Code of Conduct
+Connect
+Twitter
+GitHub
+Slack
+r/golang
+Meetup
+Golang Weekly
+Gopher in flight goggles
+Copyright
+Terms of Service
+Privacy Policy
+Report an Issue
+System theme
+Google logo
+go
